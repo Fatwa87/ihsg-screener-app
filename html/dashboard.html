@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 IHSG Screener - Smart Market Predictor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --dark: #1f2937;
+            --light: #f9fafb;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ============ HEADER ============ */
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .header-left p {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .last-update {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.95em;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* ============ GRID LAYOUT ============ */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .grid-full {
+            grid-column: 1 / -1;
+        }
+
+        .grid-third {
+            grid-column: span 1;
+        }
+
+        /* ============ CARD ============ */
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h2 {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ============ PREDICTION CARD ============ */
+        .ihsg-card {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        .ihsg-card h2 {
+            color: white;
+        }
+
+        .prediction-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .prediction-item {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .prediction-item .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .prediction-item .value {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 10px 0;
+            color: #fff;
+        }
+
+        .prediction-item .confidence {
+            font-size: 0.85em;
+            opacity: 0.85;
+            font-weight: 500;
+        }
+
+        /* ============ STATUS BADGE ============ */
+        .status-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 1.15em;
+            margin: 15px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .bullish {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .bearish {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .neutral {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        /* ============ NEWS SECTION ============ */
+        .news-container {
+            max-height: 450px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .news-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 5px solid var(--primary);
+            margin-bottom: 12px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .news-item:hover {
+            background: #f0f4ff;
+            border-left-color: var(--secondary);
+            transform: translateX(5px);
+        }
+
+        .news-item .title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+            line-height: 1.4;
+            font-size: 0.95em;
+        }
+
+        .news-item .meta {
+            font-size: 0.8em;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .news-item .sentiment {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .sentiment.positive {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .sentiment.negative {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .sentiment.neutral {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* ============ STOCK RECOMMENDATIONS ============ */
+        .stocks-container {
+            max-height: 550px;
+            overflow-y: auto;
+        }
+
+        .stock-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary);
+            transition: all 0.3s;
+        }
+
+        .stock-item:hover {
+            background: #f0f4ff;
+            border-left-color: var(--secondary);
+        }
+
+        .stock-ticker {
+            font-weight: 700;
+            font-size: 1.15em;
+            color: var(--primary);
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .stock-info {
+            flex: 1;
+            margin: 0 15px;
+        }
+
+        .stock-sector {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .stock-reason {
+            font-size: 0.9em;
+            color: #333;
+            line-height: 1.3;
+        }
+
+        .stock-strength {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9em;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        /* ============ SECTOR GRID ============ */
+        .sector-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .sector-card {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .sector-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .sector-card .emoji {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .sector-card .name {
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .sector-card .stocks {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .sector-card .trend {
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        /* ============ CHART CONTAINER ============ */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        .chart-info {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .chart-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .chart-stat-label {
+            font-size: 0.85em;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .chart-stat-value {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* ============ LOADING SPINNER ============ */
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+            font-size: 0.95em;
+        }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .prediction-box {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+
+            .header-left h1 {
+                font-size: 2em;
+            }
+
+            .header-right {
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .card {
+                padding: 15px;
+            }
+
+            .card h2 {
+                font-size: 1.1em;
+            }
+
+            .sector-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .prediction-item .value {
+                font-size: 1.8em;
+            }
+
+            .header-left h1 {
+                font-size: 1.5em;
+            }
+
+            .status-badge {
+                font-size: 0.95em;
+                padding: 8px 16px;
+            }
+        }
+
+        /* ============ SCROLLBAR ============ */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary);
+        }
+
+        /* ============ ANIMATIONS ============ */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+        .card:nth-child(4) { animation-delay: 0.4s; }
+
+        /* ============ FOOTER ============ */
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            padding: 25px;
+            font-size: 0.9em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* ============ UTILITIES ============ */
+        .text-center { text-align: center; }
+        .mt-20 { margin-top: 20px; }
+        .mb-20 { margin-bottom: 20px; }
+        .opacity-50 { opacity: 0.5; }
+
+        /* ============ STATS ROW ============ */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .stat-box .label {
+            font-size: 0.8em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-weight: 600;
+        }
+
+        .stat-box .value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--primary);
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-left">
+                <h1>📊 IHSG Screener</h1>
+                <p>Smart Market Prediction & Stock Screener</p>
+            </div>
+            <div class="header-right">
+                <div class="last-update">
+                    Last Update: <span id="lastUpdate">Loading...</span>
+                </div>
+                <button class="btn" onclick="refreshData()">🔄 Refresh Now</button>
+            </div>
+        </div>
+
+        <!-- IHSG PREDICTION -->
+        <div class="card ihsg-card grid-full">
+            <h2>📈 IHSG Prediction & Market Analysis</h2>
+            <div class="prediction-box">
+                <div class="prediction-item">
+                    <div class="label">📊 Technical Signal</div>
+                    <div class="value" id="taScore">-</div>
+                    <div class="confidence">Signal Strength</div>
+                </div>
+                <div class="prediction-item">
+                    <div class="label">💬 Sentiment Score</div>
+                    <div class="value" id="sentimentScore">-</div>
+                    <div class="confidence">News Sentiment</div>
+                </div>
+                <div class="prediction-item">
+                    <div class="label">🎯 Combined Prediction</div>
+                    <div class="value" id="combinedScore">-</div>
+                    <div class="confidence" id="confidence">-</div>
+                </div>
+            </div>
+            <center>
+                <span class="status-badge" id="recommendation" style="display: none;">-</span>
+            </center>
+            <div class="stats-row" id="predictionStats" style="margin-top: 20px;"></div>
+        </div>
+
+        <!-- MAIN GRID -->
+        <div class="grid">
+            <!-- IHSG CHART -->
+            <div class="card">
+                <h2>📈 IHSG Trend (Last 30 Days)</h2>
+                <div class="chart-info" id="chartInfo">
+                    <div class="chart-stat">
+                        <span class="chart-stat-label">Current Price</span>
+                        <span class="chart-stat-value" id="currentPrice">-</span>
+                    </div>
+                    <div class="chart-stat">
+                        <span class="chart-stat-label">Daily Change</span>
+                        <span class="chart-stat-value" id="dailyChange">-</span>
+                    </div>
+                    <div class="chart-stat">
+                        <span class="chart-stat-label">% Change</span>
+                        <span class="chart-stat-value" id="percentChange">-</span>
+                    </div>
+                </div>
+                <div class="chart-container" id="ihsgChart">
+                    <div class="loading-text">Loading chart...</div>
+                </div>
+            </div>
+
+            <!-- LATEST NEWS -->
+            <div class="card">
+                <h2>📰 Latest News Feed</h2>
+                <div class="news-container" id="newsList">
+                    <div class="loading-text">Loading news...</div>
+                </div>
+            </div>
+
+            <!-- STOCK RECOMMENDATIONS -->
+            <div class="card">
+                <h2>🎯 Top Stock Recommendations</h2>
+                <div class="stocks-container" id="stocksList">
+                    <div class="loading-text">Loading stocks...</div>
+                </div>
+            </div>
+
+            <!-- SECTOR ANALYSIS -->
+            <div class="card">
+                <h2>🏢 Sector Analysis</h2>
+                <div class="sector-grid" id="sectorGrid">
+                    <div class="loading-text">Loading sectors...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <p>📊 IHSG Screener v2.0 | Real-time Market Data | Powered by Yahoo Finance & Google Apps Script</p>
+            <p style="margin-top: 10px; font-size: 0.85em; opacity: 0.8;">Auto-updates every hour | Data accuracy: Real-time from Yahoo Finance</p>
+        </div>
+    </div>
+
+    <script>
+        // ==================== GLOBAL VARIABLES ====================
+        let ihsgChart = null;
+        const SECTOR_DATA = {
+            'Perbankan': {emoji: '🏦', stocks: ['BBCA', 'BBRI', 'BNI', 'BMRI'], trend: '📈'},
+            'Consumer': {emoji: '🛍️', stocks: ['UNVR'], trend: '📊'},
+            'Telekomunikasi': {emoji: '📞', stocks: ['TLKM'], trend: '📈'},
+            'Otomotif': {emoji: '🚗', stocks: ['ASII'], trend: '📊'},
+            'Energi': {emoji: '⚡', stocks: ['INDY'], trend: '📉'},
+            'Pertambangan': {emoji: '⛏️', stocks: ['INCO', 'ADRO', 'ANTM'], trend: '📊'}
+        };
+
+        // ==================== MAIN FUNCTIONS ====================
+
+        /**
+         * Load dashboard on page load
+         */
+        function loadDashboard() {
+            console.log('📊 Loading dashboard...');
+            updateLastUpdate();
+            loadIHSGPrediction();
+            loadIHSGChart();
+            loadLatestNews();
+            loadStockRecommendations();
+            loadSectorAnalysis();
+        }
+
+        /**
+         * Update last update time
+         */
+        function updateLastUpdate() {
+            const now = new Date();
+            document.getElementById('lastUpdate').innerText = now.toLocaleString('id-ID', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        /**
+         * Load IHSG Prediction
+         */
+        function loadIHSGPrediction() {
+            console.log('Loading IHSG prediction...');
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    if (data && data.length > 0) {
+                        const latest = data[data.length - 1];
+                        
+                        const taScore = parseFloat(latest[1]) || 0;
+                        const sentimentScore = parseFloat(latest[2]) || 0;
+                        const combinedScore = parseFloat(latest[3]) || 0;
+                        const recommendation = latest[4] || 'NEUTRAL';
+                        const confidence = parseFloat(latest[5]) || 0;
+                        const positiveNews = parseInt(latest[6]) || 0;
+                        const negativeNews = parseInt(latest[7]) || 0;
+                        const totalNews = parseInt(latest[8]) || 0;
+                        
+                        // Update UI
+                        document.getElementById('taScore').innerText = (taScore * 100).toFixed(0) + '%';
+                        document.getElementById('sentimentScore').innerText = (sentimentScore * 100).toFixed(0) + '%';
+                        document.getElementById('combinedScore').innerText = (combinedScore * 100).toFixed(0) + '%';
+                        document.getElementById('confidence').innerText = 'Confidence: ' + confidence.toFixed(0) + '%';
+                        
+                        // Update recommendation badge
+                        const badge = document.getElementById('recommendation');
+                        if (recommendation.includes('BULLISH')) {
+                            badge.className = 'status-badge bullish';
+                        } else if (recommendation.includes('BEARISH')) {
+                            badge.className = 'status-badge bearish';
+                        } else {
+                            badge.className = 'status-badge neutral';
+                        }
+                        badge.innerText = recommendation;
+                        badge.style.display = 'inline-block';
+                        
+                        // Update stats
+                        document.getElementById('predictionStats').innerHTML = `
+                            <div class="stat-box">
+                                <div class="label">Positive News</div>
+                                <div class="value">${positiveNews}</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="label">Negative News</div>
+                                <div class="value">${negativeNews}</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="label">Total News</div>
+                                <div class="value">${totalNews}</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="label">TA Signal</div>
+                                <div class="value">${(taScore).toFixed(2)}</div>
+                            </div>
+                        `;
+                        
+                        console.log('✅ Prediction loaded');
+                    }
+                })
+                .getSheetData('Predictions');
+        }
+
+        /**
+         * Load IHSG Chart
+         */
+        function loadIHSGChart() {
+            console.log('Loading IHSG chart...');
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    if (!data || data.length === 0) {
+                        document.getElementById('ihsgChart').innerHTML = '<div class="loading-text">No data available</div>';
+                        return;
+                    }
+
+                    const dates = [];
+                    const values = [];
+                    const changes = [];
+
+                    data.forEach(row => {
+                        const date = new Date(row[0]);
+                        dates.push(date.toLocaleDateString('id-ID', {month: 'short', day: 'numeric'}));
+                        values.push(parseFloat(row[2]) || 0);
+                        changes.push(parseFloat(row[3]) || 0);
+                    });
+
+                    // Update info
+                    const latest = values[values.length - 1];
+                    const previous = values[values.length - 2] || latest;
+                    const change = latest - previous;
+                    const percentChange = (change / previous * 100);
+
+                    document.getElementById('currentPrice').innerText = latest.toLocaleString('id-ID', {maximumFractionDigits: 2});
+                    document.getElementById('dailyChange').innerText = change.toFixed(2);
+                    document.getElementById('percentChange').innerText = percentChange.toFixed(2) + '%';
+
+                    // Create chart
+                    const container = document.getElementById('ihsgChart');
+                    container.innerHTML = '<canvas id="chart"></canvas>';
+                    const canvas = document.getElementById('chart');
+
+                    if (ihsgChart) {
+                        ihsgChart.destroy();
+                    }
+
+                    ihsgChart = new Chart(canvas, {
+                        type: 'line',
+                        data: {
+                            labels: dates,
+                            datasets: [{
+                                label: 'IHSG Value',
+                                data: values,
+                                borderColor: '#fff',
+                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 3,
+                                pointBackgroundColor: '#fff',
+                                pointBorderColor: 'var(--primary)',
+                                pointBorderWidth: 2,
+                                pointHoverRadius: 5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: false,
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.1)'
+                                    },
+                                    ticks: {
+                                        color: '#fff'
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    },
+                                    ticks: {
+                                        color: '#fff'
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    console.log('✅ Chart loaded');
+                })
+                .getSheetData('Market_Snapshot');
+        }
+
+        /**
+         * Load Latest News
+         */
+        function loadLatestNews() {
+            console.log('Loading latest news...');
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    const newsList = document.getElementById('newsList');
+                    
+                    if (!data || data.length === 0) {
+                        newsList.innerHTML = '<div class="loading-text">No news available</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    
+                    data.slice(1).slice(-15).reverse().forEach(row => {
+                        const title = row[1] || 'N/A';
+                        const source = row[3] || 'Unknown';
+                        const sentiment = row[7] || 'NEUTRAL';
+                        
+                        let sentimentClass = 'neutral';
+                        if (sentiment === 'POSITIVE') sentimentClass = 'positive';
+                        if (sentiment === 'NEGATIVE') sentimentClass = 'negative';
+
+                        html += `
+                            <div class="news-item">
+                                <div class="title">${title.substring(0, 85)}${title.length > 85 ? '...' : ''}</div>
+                                <div class="meta">📢 ${source}</div>
+                                <span class="sentiment ${sentimentClass}">${sentiment}</span>
+                            </div>
+                        `;
+                    });
+
+                    newsList.innerHTML = html;
+                    console.log('✅ News loaded');
+                })
+                .getSheetData('News');
+        }
+
+        /**
+         * Load Stock Recommendations
+         */
+        function loadStockRecommendations() {
+            console.log('Loading stock recommendations...');
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    const stocksList = document.getElementById('stocksList');
+                    
+                    if (!data || data.length <= 1) {
+                        stocksList.innerHTML = '<div class="loading-text">No recommendations available</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    
+                    data.slice(1).slice(-15).forEach(row => {
+                        const ticker = row[1] || 'N/A';
+                        const sector = row[2] || 'Unknown';
+                        const reason = row[3] || 'N/A';
+                        const strength = row[5] || '0%';
+                        const sentiment = row[6] || 'NEUTRAL';
+
+                        html += `
+                            <div class="stock-item">
+                                <div class="stock-ticker">${ticker}</div>
+                                <div class="stock-info">
+                                    <div class="stock-sector">${sector}</div>
+                                    <div class="stock-reason">${reason}</div>
+                                </div>
+                                <div class="stock-strength">${strength}</div>
+                            </div>
+                        `;
+                    });
+
+                    stocksList.innerHTML = html;
+                    console.log('✅ Stocks loaded');
+                })
+                .getSheetData('Stock_Recommendations');
+        }
+
+        /**
+         * Load Sector Analysis
+         */
+        function loadSectorAnalysis() {
+            console.log('Loading sector analysis...');
+            
+            let html = '';
+            
+            for (const [sector, info] of Object.entries(SECTOR_DATA)) {
+                html += `
+                    <div class="sector-card">
+                        <div class="emoji">${info.emoji}</div>
+                        <div class="name">${sector}</div>
+                        <div class="stocks">${info.stocks.length} Stocks</div>
+                        <div class="trend">${info.trend}</div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('sectorGrid').innerHTML = html;
+            console.log('✅ Sectors loaded');
+        }
+
+        /**
+         * Refresh all data
+         */
+        function refreshData() {
+            const btn = event.target;
+            const originalText = btn.innerText;
+            
+            btn.disabled = true;
+            btn.innerText = '⏳ Updating...';
+
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    console.log('✅ Manual refresh initiated');
+                    
+                    setTimeout(() => {
+                        loadDashboard();
+                        btn.disabled = false;
+                        btn.innerText = originalText;
+                        
+                        // Show success message
+                        alert('✅ Data updated successfully!\n\nUpdate Time: ' + new Date().toLocaleTimeString('id-ID'));
+                    }, 2000);
+                })
+                .withFailureHandler(function(error) {
+                    console.error('❌ Refresh error:', error);
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                    alert('❌ Error during refresh: ' + error);
+                })
+                .manualRefresh();
+        }
+
+        // ==================== INITIALIZATION ====================
+
+        /**
+         * Load dashboard when page ready
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Dashboard initialized');
+            loadDashboard();
+        });
+
+        /**
+         * Auto-refresh every 30 minutes
+         */
+        setInterval(function() {
+            console.log('🔄 Auto-refresh triggered');
+            loadDashboard();
+        }, 30 * 60 * 1000);
+
+        /**
+         * Refresh every 5 minutes for realtime feel
+         */
+        setInterval(function() {
+            updateLastUpdate();
+        }, 1 * 60 * 1000);
+    </script>
+</body>
+</html>
